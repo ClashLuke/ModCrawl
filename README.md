@@ -4,14 +4,14 @@
 **Dependencies**<br/>
 Those scripts use Python3, to enable Python2 support, uncomment the first line in deps.py.<br/>
 Using Python3, you will need to download the following libraries:<br/>
-	re<br/>
-	requests<br/>
+	re
+	requests
 You can install those dependencies using the following command `python3 -m pip install re requests`.<br/>
 <br/>
 Using Python2, you will need to download the following libraries:<br/>
-	sets<br/>
-	re<br/>
-	requests<br/>
+	sets
+	re
+	requests
 You can install those dependencies using the following command `python2 -m pip install sets re requests`.<br/>
 <br/>
 <br/>
