@@ -78,8 +78,8 @@ def clear():
 
 
 def input_default(text, default, typ = "string"):
-    i = input(text + '\t[' + str(default) + ']\t\033[1;33m')
-    print(i)
+    i = input("\033[0m" + text + '\t[' + str(default) + ']\t\033[1;33m')
+    print('\033[0m',end='')
     if i == "":
         return default
     else:
