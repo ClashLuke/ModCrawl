@@ -171,6 +171,9 @@ def help():
 	printIntended("-m <num>, --max <num>",1)
 	printIntended("A parameter to determine the maximum number of URLs which",2)
 	printIntended("will be scraped. Set -1 to continue forever\n",2)
+	printIntended("-f <num>, --file <num>",1)
+	printIntended("Add a keyword file in favor of a querying one keyword.",2)
+	printIntended("Allows the usage of multiple keywords, split by newline.\n",2)
 	printIntended("-t <num>, --threads <num>",1)
 	printIntended("Defines the number of threads to be used when scraping.",2)
 	printIntended("threads decrease the time needed to download a website,",2)
@@ -179,6 +182,7 @@ def help():
 
 def processArgs():
 	query = ""
+	fileName = ""
 	engine = "g"
 	maxUrls = -1
 	threadCount = 1
@@ -187,7 +191,13 @@ def processArgs():
 			try:
 				query = sys.argv[i+1]
 			except:
-				help()
+				pass
+			continue
+		if sys.argv[i] == '-f' or sys.argv[i] == '--file':
+			try:
+				fileName = sys.argv[i+1]
+			except:
+				pass
 			continue
 		if sys.argv[i] == '-e' or sys.argv[i] == '--engine':
 			try:
@@ -209,13 +219,13 @@ def processArgs():
 			continue
 		if sys.argv[i] == '-h' or sys.argv[i] == '--help':
 			help()
-	if maxUrls == 0 or threadCount == 0:
+	if maxUrls == 0 or threadCount == 0 or (query == "" and fileName == ""):
 		help()
-	return([query, engine, maxUrls, threadCount])
+	return([query, engine, maxUrls, threadCount, fileName])
 
 def processQuery(query):
 	replacementList = [
-				['!', "%21"], ['#', "%23"], 
+				[' ', "%20"], ['!', "%21"], ['#', "%23"],
 				['$', "%24"], ["&", "%26"], ["'", "%27"], ['(', "%28"],
 				[')', "%29"], ['*', "%2A"], ['+', "%2B"], [',', "%2C"],
 				['/', "%2F"], [':', "%3A"], [';', "%3B"], ['=', "%3D"],
@@ -252,11 +262,25 @@ def buildSearchLinks(query, engine):
 
 def init():
 	initFiles()
-	query, engine, maxUrls, threadCount = processArgs()
-	searchQuery = processQuery(query)
-	urls, engines = buildSearchLinks(searchQuery, engine)
-	addNewUrls(urls)
-	return([maxUrls, engines, query.replace('%20',' '), threadCount])
+	query, engine, maxUrls, threadCount, fileName = processArgs()
+	query = [query]
+	if(fileName != ""):
+		f = open(fileName, 'r')
+		r = f.read().split('\n')
+		for line in r:
+			query.append(line)
+	query = sorted(list(set(query)))
+	for i in range(len(query)):
+		if query[i] == '':
+			del query[i]
+		else:
+			break
+	searchQuery = [processQuery(q) for q in query]
+	query = [q.replace('%20',' ') for q in query]
+	for q in searchQuery:
+		urls, engines = buildSearchLinks(searchQuery, engine)
+		addNewUrls(urls)
+	return([maxUrls, engines, query, threadCount])
 
 def progess(current, maximum):
 	currentProgress = int((50*current)//maximum)
@@ -485,7 +509,10 @@ if __name__ == "__main__":
 	maxUrls, engines, keyword, threadCount = init()
 	print("\n\033[1mModCrawl\033[0m - The modular and powerful web crawler\n")  
 	seperator()
-	print("Keyword: {}".format(keyword))
+	if len(keyword) == 1:
+		print("Keyword: {}".format(keyword[0]))
+	else:
+		print("Keywords: {}".format(", ".join(keyword)))
 	print("Search Engines: {}".format(', '.join(engines)))
 	print("Maximum URLs to scrape: {}".format(maxUrls))
 	print("Threads: {}".format(threadCount))
