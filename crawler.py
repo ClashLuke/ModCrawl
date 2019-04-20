@@ -278,7 +278,7 @@ def init():
 	searchQuery = [processQuery(q) for q in query]
 	query = [q.replace('%20',' ') for q in query]
 	for q in searchQuery:
-		urls, engines = buildSearchLinks(searchQuery, engine)
+		urls, engines = buildSearchLinks(q, engine)
 		addNewUrls(urls)
 	return([maxUrls, engines, query, threadCount])
 
