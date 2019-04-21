@@ -10,6 +10,7 @@ import re
 # GLOBAL DEFINITION #
 #-=-=-=-=-=-=-=-=-=-#
 
+tab = ' '*8
 splitters = [' ', '"', '\'', '#', ':', ';', '<', '>', '{', '}', '[', ']', '(', ')']
 dotWords = [
 		"\\ \\[dot\\]\\ ", "\\ DOT\\ ", "\\ Точка\\ ", "\\(\\.\\)", "\\(bod\\)",
@@ -158,6 +159,9 @@ def help():
 	printBold("OPTIONS")
 	printIntended("-h, --help",1)
 	printIntended("Prints the help page/manual.\n",2)
+	printIntended("-c, --continue",1)
+	printIntended("Continue the previous list. Usable when previously started",2)
+	printIntended("a crawl operation.\n",2)
 	printIntended("-q <arg>, --query <arg>",1)
 	printIntended("Use <arg> to create requests at search engines. A",2)
 	printIntended("space ' ' character has to be replaced by \"%20\"",2)
@@ -186,6 +190,7 @@ def processArgs():
 	engine = "g"
 	maxUrls = -1
 	threadCount = 1
+	c = False # Continue?
 	for i in range(1,len(sys.argv)):
 		if sys.argv[i] == '-q' or sys.argv[i] == '--query':
 			try:
@@ -217,11 +222,17 @@ def processArgs():
 			except:
 				pass
 			continue
+		if sys.argv[i] == '-c' or sys.argv[i] == '--continue':
+			try:
+				c = True
+			except:
+				pass
+			continue
 		if sys.argv[i] == '-h' or sys.argv[i] == '--help':
 			help()
 	if maxUrls == 0 or threadCount == 0 or (query == "" and fileName == ""):
 		help()
-	return([query, engine, maxUrls, threadCount, fileName])
+	return([query, engine, maxUrls, threadCount, fileName, c])
 
 def processQuery(query):
 	replacementList = [
@@ -297,31 +308,33 @@ def buildSearchLinks(query, engine):
 		
 
 def init():
-	initFiles()
 	print("Processing arguments",end='\r')
-	query, engine, maxUrls, threadCount, fileName = processArgs()
-	query = [query]
-	if(fileName != ""):
-		print("Reading Keywords",end='\r')
-		f = open(fileName, 'r')
-		r = f.read().split('\n')
-		for line in r:
-			query.append(line)
-	print("Increasing keyword quality",end='\r')
-	query = sorted(list(set(query)))
-	for i in range(len(query)):
-		if query[i] == '':
-			del query[i]
-		else:
-			break
-	print("Processing keywords",end='\r')
-	searchQuery = [processQuery(q) for q in query]
-	query = [q.replace('%20',' ') for q in query]
-	print("Building search links",end='\r')
-	for q in searchQuery:
-		urls, engines = buildSearchLinks(q, engine)
-		addNewUrls(urls)
-	print("Starting crawler",end='\r')
+	query, engine, maxUrls, threadCount, fileName, c = processArgs()
+	if(not(c)):
+		initFiles()
+		query = [query]
+		if(fileName != ""):
+			print("Reading Keywords",end='\r')
+			f = open(fileName, 'r')
+			r = f.read().split('\n')
+			for line in r:
+				query.append(line)
+		print("Increasing keyword quality",end='\r')
+		query = sorted(list(set(query)))
+		for i in range(len(query)):
+			if query[i] == '':
+				del query[i]
+			else:
+				break
+		print("Processing keywords",end='\r')
+		searchQuery = [processQuery(q) for q in query]
+		query = [q.replace('%20',' ') for q in query]
+		print("Building search links",end='\r')
+		for q in searchQuery:
+			urls, engines = buildSearchLinks(q, engine)
+			addNewUrls(urls)
+		print("Starting crawler",end='\r')
+		print("                          ",end='\r')
 	return([maxUrls, engines, query, threadCount])
 
 def progess(current, maximum):
@@ -430,9 +443,9 @@ def removeLastNewUrl():
 	curFile = open("newUrls",'r') 
 	prevList = curFile.read().split('\n')
 	curFile.close()
-	curFile = open("newUrls",'w')
-	curFile.write('\n'.join(prevList[1:]))
-	curFile.close()
+	newFile = open("newUrls",'w')
+	newFile.write('\n'.join(prevList[1:]))
+	newFile.close()
 
 def addProcessedUrl(url):
 	prevFile = open("processedUrls",'a')
@@ -483,6 +496,13 @@ def fullProcess(maxUrls, proxies, currentHour):
 	processUrl(url, proxies[maxUrls%len(proxies)])
 	return([maxUrls, proxies, currentHour])
 
+def totalCount():
+	c = open("newUrls",'r')
+	out = 0
+	for i, line in enumerate(c):
+		out = i
+	return(out)
+
 #-=-=-=-=-=-=-=-#
 # API FUNCTIONS #
 #-=-=-=-=-=-=-=-#
@@ -530,27 +550,27 @@ def scrape(maxUrls, threadCount):
 			threads = [threading.Thread(target=fullProcess, args=(maxUrls, proxies, currentHour)) for i in range(threadCount)]
 			for t in threads:
 				t.start()
-				time.sleep(0.001)
-			current += 1
-			progess(current, maxUrls)
-			for t in threads:
-				t.join()
+				time.sleep(0.01)
 				current += 1
 				progess(current, maxUrls)
+			current += 1
+			progess(current, maxUrls)
 	else:
+		startTime = int(time.time())
 		while(True):
-			print("Progress: {}".format(current),end='\r')
+			curDelta = int(time.time()-startTime)
+			print("Processed: {}{}Total Urls: {}{}Elapsed: {}h {}min {}s".format(current,tab, current+totalCount(),tab,int((curDelta/60/60)%24),int((curDelta/60)%60),curDelta%60),end='\r')
 			threads = [threading.Thread(target=fullProcess, args=(maxUrls, proxies, currentHour)) for i in range(threadCount)]
 			for t in threads:
 				t.start()
+				time.sleep(0.1)
 				current += 1
-				print("Progress: {}".format(current),end='\r')
-				time.sleep(0.001)
+				curDelta = int(time.time()-startTime)
+				print("Processed: {}{}Total Urls: {}{}Elapsed: {}h {}min {}s".format(current,tab, current+totalCount(),tab,int((curDelta/60/60)%24),int((curDelta/60)%60),curDelta%60),end='\r')
 			maxUrls, proxies, currentHour = fullProcess(maxUrls, proxies, currentHour)
 			current += 1
-			print("Progress: {}".format(current),end='\r')
-			for t in threads:
-				t.join()
+			curDelta = int(time.time()-startTime)
+			print("Processed: {}{}Total Urls: {}{}Elapsed: {}h {}min {}s".format(current,tab, current+totalCount(),tab,int((curDelta/60/60)%24),int((curDelta/60)%60),curDelta%60),end='\r')
 	progess(maxUrls, maxUrls)
 	print("\n")
 
