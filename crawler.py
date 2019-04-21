@@ -298,24 +298,30 @@ def buildSearchLinks(query, engine):
 
 def init():
 	initFiles()
+	print("Processing arguments",end='\r')
 	query, engine, maxUrls, threadCount, fileName = processArgs()
 	query = [query]
 	if(fileName != ""):
+		print("Reading Keywords",end='\r')
 		f = open(fileName, 'r')
 		r = f.read().split('\n')
 		for line in r:
 			query.append(line)
+	print("Increasing keyword quality",end='\r')
 	query = sorted(list(set(query)))
 	for i in range(len(query)):
 		if query[i] == '':
 			del query[i]
 		else:
 			break
+	print("Processing keywords",end='\r')
 	searchQuery = [processQuery(q) for q in query]
 	query = [q.replace('%20',' ') for q in query]
+	print("Building search links",end='\r')
 	for q in searchQuery:
 		urls, engines = buildSearchLinks(q, engine)
 		addNewUrls(urls)
+	print("Starting crawler",end='\r')
 	return([maxUrls, engines, query, threadCount])
 
 def progess(current, maximum):
@@ -524,20 +530,27 @@ def scrape(maxUrls, threadCount):
 			threads = [threading.Thread(target=fullProcess, args=(maxUrls, proxies, currentHour)) for i in range(threadCount)]
 			for t in threads:
 				t.start()
-				time.sleep(1)
-			maxUrls, proxies, currentHour = fullProcess(maxUrls, proxies, currentHour)
-			[t.join() for t in threads]
-			current += increaser
+				time.sleep(0.001)
+			current += 1
+			progess(current, maxUrls)
+			for t in threads:
+				t.join()
+				current += 1
+				progess(current, maxUrls)
 	else:
 		while(True):
 			print("Progress: {}".format(current),end='\r')
 			threads = [threading.Thread(target=fullProcess, args=(maxUrls, proxies, currentHour)) for i in range(threadCount)]
 			for t in threads:
 				t.start()
-				time.sleep(1)
+				current += 1
+				print("Progress: {}".format(current),end='\r')
+				time.sleep(0.001)
 			maxUrls, proxies, currentHour = fullProcess(maxUrls, proxies, currentHour)
-			[t.join() for t in threads]
-			current += increaser
+			current += 1
+			print("Progress: {}".format(current),end='\r')
+			for t in threads:
+				t.join()
 	progess(maxUrls, maxUrls)
 	print("\n")
 
