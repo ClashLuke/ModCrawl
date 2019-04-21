@@ -420,7 +420,6 @@ def addNewUrls(urllist):
 	prevList = prevList + curFile.read().split('\n')
 	curFile.close()
 	f = open("newUrls",'a')
-
 	for url in urllist:
 		if not(url in prevList) and (len(url.replace(' ','')) != 0):
 			f.write(url)
@@ -462,12 +461,6 @@ def proxyCheck(proxies, prevTime):
 		proxies = getUrl("https://proxy.rudnkh.me/txt").split('\n')
 	return([proxies, curTime])
 
-def getNewFileLen():
-	curFile = open("newUrls",'r') 
-	for i, line in enumerate(curFile):
-		out = i
-	return(out)
-
 def checkUrlBlacklist(currentUrl):
 	for b in urlBlacklist:
 		if b in currentUrl:
@@ -491,17 +484,16 @@ def preProcess(proxies, currentHour):
 	return([url, proxies, currentHour])
 
 def fullProcess(maxUrls, proxies, currentHour):
-	url, proxies, currentHour = preProcess(proxies, currentHour)
+	try:
+		url, proxies, currentHour = preProcess(proxies, currentHour)
+	except:
+		pass
 	removeLastNewUrl()
-	processUrl(url, proxies[maxUrls%len(proxies)])
+	try:
+		processUrl(url, proxies[maxUrls%len(proxies)])
+	except:
+		pass
 	return([maxUrls, proxies, currentHour])
-
-def totalCount():
-	c = open("newUrls",'r')
-	out = 0
-	for i, line in enumerate(c):
-		out = i
-	return(out)
 
 #-=-=-=-=-=-=-=-#
 # API FUNCTIONS #
@@ -550,7 +542,7 @@ def scrape(maxUrls, threadCount):
 			threads = [threading.Thread(target=fullProcess, args=(maxUrls, proxies, currentHour)) for i in range(threadCount)]
 			for t in threads:
 				t.start()
-				time.sleep(0.01)
+				time.sleep(1)
 				current += 1
 				progess(current, maxUrls)
 			current += 1
@@ -559,18 +551,20 @@ def scrape(maxUrls, threadCount):
 		startTime = int(time.time())
 		while(True):
 			curDelta = int(time.time()-startTime)
-			print("Processed: {}{}Total Urls: {}{}Elapsed: {}h {}min {}s".format(current,tab, current+totalCount(),tab,int((curDelta/60/60)%24),int((curDelta/60)%60),curDelta%60),end='\r')
+			print("Processed: {}{}Elapsed: {}h {}min {}s".format(current,tab,int((curDelta/60/60)%24),int((curDelta/60)%60),curDelta%60),end='\r')
+			maxUrls, proxies, currentHour = fullProcess(maxUrls, proxies, currentHour)
 			threads = [threading.Thread(target=fullProcess, args=(maxUrls, proxies, currentHour)) for i in range(threadCount)]
 			for t in threads:
 				t.start()
-				time.sleep(0.1)
+				time.sleep(1)
 				current += 1
 				curDelta = int(time.time()-startTime)
-				print("Processed: {}{}Total Urls: {}{}Elapsed: {}h {}min {}s".format(current,tab, current+totalCount(),tab,int((curDelta/60/60)%24),int((curDelta/60)%60),curDelta%60),end='\r')
+				print("Processed: {}{}Elapsed: {}h {}min {}s".format(current,tab,int((curDelta/60/60)%24),int((curDelta/60)%60),curDelta%60),end='\r')
 			maxUrls, proxies, currentHour = fullProcess(maxUrls, proxies, currentHour)
 			current += 1
 			curDelta = int(time.time()-startTime)
-			print("Processed: {}{}Total Urls: {}{}Elapsed: {}h {}min {}s".format(current,tab, current+totalCount(),tab,int((curDelta/60/60)%24),int((curDelta/60)%60),curDelta%60),end='\r')
+			print("Processed: {}{}Elapsed: {}h {}min {}s".format(current,tab,int((curDelta/60/60)%24),int((curDelta/60)%60),curDelta%60),end='\r')
+			maxUrls, proxies, currentHour = fullProcess(maxUrls, proxies, currentHour)
 	progess(maxUrls, maxUrls)
 	print("\n")
 
