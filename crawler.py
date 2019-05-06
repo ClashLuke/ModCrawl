@@ -458,7 +458,7 @@ def finishUrlProcessing(url):
 def proxyCheck(proxies, prevTime):
 	curTime = int(time.time()//60)
 	if(prevTime != curTime):
-		proxies = getUrl("https://proxy.rudnkh.me/txt").split('\n')
+		proxies = getUrl("https://raw.githubusercontent.com/a2u/free-proxy-list/master/free-proxy-list.txt").split('\n')
 	return([proxies, curTime])
 
 def checkUrlBlacklist(currentUrl):
