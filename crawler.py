@@ -335,7 +335,8 @@ def init():
 			addNewUrls(urls)
 		print("Starting crawler",end='\r')
 		print("                          ",end='\r')
-	return([maxUrls, engines, query, threadCount])
+		return([maxUrls, engines, query, threadCount])
+	return([maxUrls, buildSearchLinks(engine)[1], query.replace('%20',' '), threadCount])
 
 def progess(current, maximum):
 	currentProgress = int((50*current)//maximum)
